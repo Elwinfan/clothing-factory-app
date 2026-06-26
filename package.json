@@ -19,18 +19,14 @@
   "devDependencies": {
     "cordova-android": "^15.0.0",
     "cordova-plugin-file": "^8.0.0",
-    "cordova-plugin-android-permissions": "^1.1.0",
-    "cordova-plugin-file-opener": "^1.2.0",
-    "cordova-plugin-file-picker": "^1.0.0"
+    "cordova-plugin-android-permissions": "^1.1.0"
   },
   "cordova": {
     "plugins": {
       "cordova-plugin-file": {
         "ANDROIDX_WEBKIT_VERSION": "1.4.0"
       },
-      "cordova-plugin-android-permissions": {},
-      "cordova-plugin-file-opener": {},
-      "cordova-plugin-file-picker": {}
+      "cordova-plugin-android-permissions": {}
     },
     "platforms": [
       "android"

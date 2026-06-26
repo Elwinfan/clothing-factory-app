@@ -1644,73 +1644,8 @@
 
         // 恢复数据（导入JSON）
         function restoreData() {
-            if (isCordovaEnvironment()) {
-                // Cordova环境下的文件选择
-                chooseFileForRestore();
-            } else {
-                // 浏览器环境下的文件选择
-                document.getElementById('restoreFile').click();
-            }
-        }
-
-        // Cordova文件选择函数（用于恢复数据）
-        function chooseFileForRestore() {
-            if (!window.cordova || !window.cordova.plugins || !window.cordova.plugins.filePicker) {
-                // 如果没有文件选择插件，提示用户
-                showToast('请先将JSON备份文件放入设备存储目录', true);
-                return;
-            }
-
-            // 使用文件选择插件
-            window.cordova.plugins.filePicker.pickFile((uri) => {
-                window.resolveLocalFileSystemURL(uri, (fileEntry) => {
-                    fileEntry.file((file) => {
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                            try {
-                                const backup = JSON.parse(e.target.result);
-
-                                // 恢复单价配置
-                                if (backup.prices) {
-                                    localStorage.setItem(PRICES_KEY, JSON.stringify(backup.prices));
-                                    if (typeof loadPricesConfig === 'function') {
-                                        loadPricesConfig();
-                                    }
-                                }
-
-                                // 恢复工人记录数据
-                                let workerRecords = [];
-                                if (backup.workerRecords && backup.workerRecords.length > 0) {
-                                    workerRecords = backup.workerRecords;
-                                } else if (backup.records && backup.records.length > 0) {
-                                    // 兼容旧版本
-                                    workerRecords = backup.records;
-                                }
-
-                                // 恢复公司拿货数据
-                                let companyRecords = [];
-                                if (backup.companyRecords && backup.companyRecords.length > 0) {
-                                    companyRecords = backup.companyRecords;
-                                }
-
-                                // 询问恢复模式
-                                if (workerRecords.length > 0 || companyRecords.length > 0) {
-                                    importWithModeSelection(workerRecords, companyRecords);
-                                } else {
-                                    showToast('备份文件中没有记录数据', true);
-                                }
-                            } catch (error) {
-                                showToast('文件格式错误，请选择正确的备份文件', true);
-                            }
-                        };
-                        reader.readAsText(file);
-                    });
-                }, (error) => {
-                    showToast('文件读取失败: ' + error, true);
-                });
-            }, (error) => {
-                showToast('文件选择取消或失败', true);
-            });
+            // 使用HTML5文件选择器（在Cordova中也支持）
+            document.getElementById('restoreFile').click();
         }
 
         function handleRestoreFile(event) {
@@ -1766,48 +1701,8 @@
 
         // 导入CSV
         function importCSV() {
-            if (isCordovaEnvironment()) {
-                // Cordova环境下的文件选择
-                chooseFileForImport();
-            } else {
-                // 浏览器环境下的文件选择
-                document.getElementById('importFile').click();
-            }
-        }
-
-        // Cordova文件选择函数
-        function chooseFileForImport() {
-            if (!window.cordova || !window.cordova.plugins || !window.cordova.plugins.filePicker) {
-                // 如果没有文件选择插件，提示用户
-                showToast('请先将CSV文件放入设备存储目录', true);
-                return;
-            }
-
-            // 使用文件选择插件
-            window.cordova.plugins.filePicker.pickFile((uri) => {
-                window.resolveLocalFileSystemURL(uri, (fileEntry) => {
-                    fileEntry.file((file) => {
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                            try {
-                                const data = parseCSV(e.target.result);
-                                if (data.length > 0) {
-                                    importWithModeSelection(data, []);
-                                } else {
-                                    showToast('CSV文件中没有有效数据', true);
-                                }
-                            } catch (error) {
-                                showToast('CSV文件格式错误', true);
-                            }
-                        };
-                        reader.readAsText(file);
-                    });
-                }, (error) => {
-                    showToast('文件读取失败: ' + error, true);
-                });
-            }, (error) => {
-                showToast('文件选择取消或失败', true);
-            });
+            // 使用HTML5文件选择器（在Cordova中也支持）
+            document.getElementById('importFile').click();
         }
 
         function handleImportFile(event) {
@@ -2082,6 +1977,7 @@
 
                 const permissions = window.cordova.plugins.permissions;
                 if (!permissions) {
+                    console.log('权限插件未安装，使用应用内部存储');
                     resolve(false); // 插件未安装，使用默认路径
                     return;
                 }
@@ -2090,6 +1986,7 @@
                 if (window.device && window.device.version) {
                     const androidVersion = parseInt(window.device.version.split('.').slice(0, 2).join(''));
                     if (androidVersion >= 30) { // Android 11 (API 30)
+                        console.log('Android 11+，不需要存储权限');
                         resolve(true);
                         return;
                     }
@@ -2098,12 +1995,15 @@
                 // Android 6-10需要请求权限
                 permissions.requestPermission(permissions.WRITE_EXTERNAL_STORAGE, (status) => {
                     if (status.hasPermission) {
+                        console.log('存储权限已授予');
                         resolve(true);
                     } else {
-                        reject(new Error('存储权限被拒绝'));
+                        console.log('存储权限被拒绝，使用应用内部存储');
+                        resolve(false); // 使用应用内部存储
                     }
                 }, (error) => {
-                    reject(error);
+                    console.log('权限请求失败，使用应用内部存储:', error);
+                    resolve(false); // 失败时使用应用内部存储
                 });
             });
         }
@@ -2112,12 +2012,25 @@
         function downloadFileCordova(content, filename, mimeType) {
             return new Promise(async (resolve, reject) => {
                 try {
-                    // 请求权限
-                    await requestStoragePermission();
+                    // 请求权限（如果需要）
+                    try {
+                        await requestStoragePermission();
+                    } catch (permError) {
+                        console.log('权限请求失败，使用默认路径:', permError);
+                        // 继续执行，使用应用内部存储
+                    }
+
+                    // 等待文件系统就绪
+                    if (!window.cordova || !window.cordova.file) {
+                        reject(new Error('Cordova文件系统未就绪'));
+                        return;
+                    }
 
                     // 获取可访问的存储路径
                     const paths = window.cordova.file;
-                    const downloadPath = paths.externalDataDirectory || paths.documentsDirectory || paths.dataDirectory;
+                    const downloadPath = paths.externalDataDirectory ||
+                                     paths.cacheDirectory ||
+                                     paths.dataDirectory;
 
                     // 完整文件路径
                     const fullPath = downloadPath + filename;
@@ -2128,20 +2041,32 @@
                             fileEntry.createWriter((writer) => {
                                 writer.onwriteend = () => {
                                     const fileURL = fileEntry.toURL();
+                                    console.log('文件写入成功:', fullPath);
                                     resolve({ success: true, filePath: fullPath, fileURL: fileURL });
                                 };
 
                                 writer.onerror = (error) => {
-                                    reject(new Error('文件写入失败: ' + error));
+                                    console.error('文件写入错误:', error);
+                                    reject(new Error('文件写入失败'));
                                 };
 
                                 // 将内容转换为Blob并写入
                                 const blob = new Blob([content], { type: mimeType });
                                 writer.write(blob);
-                            }, reject);
-                        }, reject);
-                    }, reject);
+                            }, (error) => {
+                                console.error('创建文件失败:', error);
+                                reject(new Error('创建文件失败'));
+                            });
+                        }, (error) => {
+                            console.error('获取文件失败:', error);
+                            reject(new Error('获取文件失败'));
+                        });
+                    }, (error) => {
+                        console.error('解析路径失败:', error);
+                        reject(new Error('解析路径失败'));
+                    });
                 } catch (error) {
+                    console.error('下载过程错误:', error);
                     reject(error);
                 }
             });
