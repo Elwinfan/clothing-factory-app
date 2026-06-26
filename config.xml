@@ -38,5 +38,4 @@
 
     <!-- 插件配置 -->
     <plugin name="cordova-plugin-file" spec="^8.0.0" />
-    <plugin name="cordova-plugin-file-transfer" spec="^1.7.1" />
 </widget>
