@@ -1,0 +1,38 @@
+{
+  "name": "clothing-factory-app",
+  "displayName": "服装加工厂",
+  "version": "1.0.0",
+  "description": "服装加工厂计件管理系统 - 支持工人计件、公司拿货、数据导出等功能",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "ecosystem:cordova",
+    "clothing",
+    "factory",
+    "management",
+    "android"
+  ],
+  "author": "Elwinfan",
+  "license": "MIT",
+  "devDependencies": {
+    "cordova-android": "^15.0.0",
+    "cordova-plugin-file": "^8.0.0",
+    "cordova-plugin-file-transfer": "^1.7.1",
+    "cordova-plugin-whitelist": "1"
+  },
+  "cordova": {
+    "plugins": {
+      "cordova-plugin-file": {
+        "ANDROIDX_WEBKIT_VERSION": "1.4.0"
+      },
+      "cordova-plugin-file-transfer": {},
+      "cordova-plugin-whitelist": {}
+    },
+    "platforms": [
+      "android"
+    ]
+  },
+  "dependencies": {}
+}
